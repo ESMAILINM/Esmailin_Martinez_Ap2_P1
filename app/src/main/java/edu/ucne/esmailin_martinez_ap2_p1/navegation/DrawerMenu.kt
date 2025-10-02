@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material3.DrawerState
 import androidx.compose.material3.HorizontalDivider
@@ -51,7 +52,7 @@ fun DrawerMenu(
             ) {
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
-                    text = "Entradas de Huacales",
+                    text = "Menú Huacales",
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
                     color = Color.DarkGray,
@@ -68,6 +69,14 @@ fun DrawerMenu(
                             isSelected = selectedItem.value == Screen.ListEntradaHuacales.route,
                             screen = Screen.ListEntradaHuacales
                         ) { handleItemClick(it) }
+                    }
+                    item {
+                        DrawerItem(
+                            title = "Nueva Entrada",
+                            icon = Icons.Filled.Add,
+                            isSelected = false,
+                            screen = Screen.EditEntradaHuacales
+                        ) { handleItemClick(Screen.EditEntradaHuacales) }
                     }
                 }
             }
