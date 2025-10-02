@@ -12,7 +12,7 @@ import edu.ucne.esmailin_martinez_ap2_p1.data.local.entiti.EntradaHuacalesEntity
         EntradaHuacalesEntity::class
 
     ],
-    version = 1,
+    version = 3,
     exportSchema = false,
 )
 abstract class EntradaHuacalesDB : RoomDatabase() {
