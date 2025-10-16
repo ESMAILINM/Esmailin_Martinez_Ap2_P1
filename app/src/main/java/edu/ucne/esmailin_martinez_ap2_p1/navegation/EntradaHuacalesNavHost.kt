@@ -1,21 +1,12 @@
-// NavHost.kt
 package edu.ucne.esmailin_martinez_ap2_p1.navigation
 
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.List
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -35,22 +26,27 @@ fun EntradaHuacalesNavHost(navController: NavHostController) {
     val scope = rememberCoroutineScope()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val selectedItem = remember { mutableStateOf(Screen.ListEntradaHuacales.route) }
+    val currentTitle = remember { mutableStateOf("Entradas de Huacales") }
 
     fun handleItemClick(screen: Screen) {
-        navController.navigate(screen.route) {
-            popUpTo(navController.graph.startDestinationId) { saveState = true }
-            launchSingleTop = true
-            restoreState = true
+        scope.launch {
+            drawerState.close()
+            navController.navigate(
+                when (screen) {
+                    is Screen.ListEntradaHuacales -> screen.route
+                    is Screen.EditEntradaHuacales -> Screen.EditEntradaHuacales.createRoute(0)
+                }
+            ) {
+                popUpTo(Screen.ListEntradaHuacales.route) {
+                    inclusive = true
+                }
+                launchSingleTop = true
+                restoreState = true
+            }
+            selectedItem.value = screen.route
         }
-        selectedItem.value = screen.route
-        scope.launch { drawerState.close() }
     }
 
-    val currentScreenIconAndTitle = when (selectedItem.value) {
-        Screen.ListEntradaHuacales.route -> Icons.Filled.List to "Entradas de Huacales"
-        Screen.EditEntradaHuacales.route -> Icons.Filled.Add to "Editar Entrada"
-        else -> Icons.Filled.List to "Entradas"
-    }
 
     ModalNavigationDrawer(
         drawerContent = {
@@ -65,7 +61,6 @@ fun EntradaHuacalesNavHost(navController: NavHostController) {
                 )
                 Divider()
                 Spacer(modifier = Modifier.height(16.dp))
-
                 LazyColumn {
                     item {
                         DrawerItem(
@@ -84,18 +79,21 @@ fun EntradaHuacalesNavHost(navController: NavHostController) {
             topBar = {
                 TopAppBar(
                     title = {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = currentScreenIconAndTitle.first,
-                                contentDescription = null,
-                                modifier = Modifier.padding(end = 8.dp)
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(start = 16.dp, top = 4.dp),
+                            contentAlignment = Alignment.CenterStart
+                        ) {
+                            Text(
+                                text = currentTitle.value,
+                                fontWeight = FontWeight.Bold
                             )
-                            Text(currentScreenIconAndTitle.second)
                         }
                     },
                     navigationIcon = {
                         IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                            Icon(Icons.Filled.ArrowBack, contentDescription = "Menu")
+                            Icon(Icons.Filled.Menu, contentDescription = "Menu")
                         }
                     }
                 )
@@ -107,17 +105,18 @@ fun EntradaHuacalesNavHost(navController: NavHostController) {
                 modifier = Modifier.padding(innerPadding)
             ) {
                 composable(Screen.ListEntradaHuacales.route) {
+                    currentTitle.value = "Entradas de Huacales"
                     selectedItem.value = Screen.ListEntradaHuacales.route
-                    ListEntradaHuacalesScreen(navController = navController)
+                    ListEntradaHuacalesScreen(navController)
                 }
-
                 composable(
-                    route = Screen.EditEntradaHuacales.route,
+                    route = "edit_entrada_huacales/{entradaId}",
                     arguments = listOf(navArgument("entradaId") { type = androidx.navigation.NavType.IntType })
                 ) { backStackEntry ->
-                    val id = backStackEntry.arguments?.getInt("entradaId")
+                    val id = backStackEntry.arguments?.getInt("entradaId") ?: 0
+                    currentTitle.value = if (id == 0) "Nueva Entrada" else "Editar Entrada"
                     selectedItem.value = Screen.EditEntradaHuacales.route
-                    EditEntradaHuacalesScreen(navController = navController, entradaId = id)
+                    EditEntradaHuacalesScreen(navController, entradaId = id)
                 }
             }
         }

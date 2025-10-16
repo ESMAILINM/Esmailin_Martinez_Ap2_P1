@@ -1,57 +1,150 @@
 package edu.ucne.esmailin_martinez_ap2_p1.presentation.edit
 
+import android.icu.text.SimpleDateFormat
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import java.text.NumberFormat
+import java.util.*
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditEntradaHuacalesScreen(
     navController: NavController,
     entradaId: Int?,
     viewModel: EditEntradaHuacalesViewModel = hiltViewModel()
 ) {
-    LaunchedEffect(entradaId) {
+    LaunchedEffect(key1 = entradaId) {
         viewModel.onEvent(EditEntradaHuacalesUiEvent.Load(entradaId))
     }
 
     val state by viewModel.state.collectAsStateWithLifecycle()
 
-    LaunchedEffect(state.isSaved) {
-        if (state.isSaved) {
-            navController.popBackStack()
-        }
+    LaunchedEffect(key1 = state.isSaved) {
+        if (state.isSaved) navController.popBackStack()
     }
 
     EditEntradaHuacalesBody(
         state = state,
-        onEvent = viewModel::onEvent
+        onEvent = viewModel::onEvent,
+        onCancel = { navController.popBackStack() }
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditEntradaHuacalesBody(
     state: EditEntradaHuacalesUiState,
-    onEvent: (EditEntradaHuacalesUiEvent) -> Unit
+    onEvent: (EditEntradaHuacalesUiEvent) -> Unit,
+    onCancel: () -> Unit
 ) {
-    Scaffold(
-        modifier = Modifier.fillMaxSize()
-    ) { padding ->
+    val cantidadDouble = state.cantidad.toDoubleOrNull() ?: 0.0
+    val precioDouble = state.precio.toDoubleOrNull() ?: 0.0
+    val importeVal = cantidadDouble * precioDouble
+    val importeStr = NumberFormat.getCurrencyInstance(Locale("es", "DO")).format(importeVal)
+    val datePickerState = rememberDatePickerState()
+    var showDatePicker by remember { mutableStateOf(false) }
+    val scrollState = rememberScrollState()
+
+    Scaffold { padding ->
         Column(
             modifier = Modifier
                 .padding(padding)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(16.dp)
+                .fillMaxSize()
+                .verticalScroll(scrollState),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Nombre Cliente
+            Text("")
+
+            OutlinedTextField(
+                value = state.fecha,
+                onValueChange = {},
+                label = { Text("Fecha (yyyy-MM-dd)") },
+                readOnly = true,
+                isError = state.fechaError != null,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { showDatePicker = true },
+                trailingIcon = {
+                    IconButton(onClick = { showDatePicker = true }) {
+                        Icon(
+                            imageVector = Icons.Default.DateRange,
+                            contentDescription = "Seleccionar fecha"
+                        )
+                    }
+                }
+            )
+            state.fechaError?.let {
+                Text(
+                    text = it,
+                    color = MaterialTheme.colorScheme.error,
+                    fontSize = 12.sp,
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Start
+                )
+            }
+
+            if (showDatePicker) {
+                DatePickerDialog(
+                    onDismissRequest = { showDatePicker = false },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                val millis = datePickerState.selectedDateMillis
+                                if (millis != null) {
+                                    val formatted = SimpleDateFormat("yyyy-MM-dd", Locale("es", "DO"))
+                                        .format(Date(millis))
+                                    onEvent(EditEntradaHuacalesUiEvent.FechaChanged(formatted))
+                                }
+                                showDatePicker = false
+                            }
+                        ) { Text("Aceptar") }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showDatePicker = false }) { Text("Cancelar") }
+                    }
+                ) {
+                    DatePicker(state = datePickerState)
+                }
+            }
+
+            OutlinedTextField(
+                value = state.descripcion,
+                onValueChange = { onEvent(EditEntradaHuacalesUiEvent.DescripcionChanged(it)) },
+                label = { Text("Descripción") },
+                isError = state.descripcionError != null,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(100.dp),
+                maxLines = 4
+            )
+            state.descripcionError?.let {
+                Text(
+                    text = it,
+                    color = MaterialTheme.colorScheme.error,
+                    fontSize = 12.sp,
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Start
+                )
+            }
+
             OutlinedTextField(
                 value = state.nombreCliente,
                 onValueChange = { onEvent(EditEntradaHuacalesUiEvent.NombreClienteChanged(it)) },
@@ -63,27 +156,12 @@ fun EditEntradaHuacalesBody(
                 Text(
                     text = it,
                     color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodySmall
+                    fontSize = 12.sp,
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Start
                 )
             }
 
-            // Descripción
-            OutlinedTextField(
-                value = state.descripcion,
-                onValueChange = { onEvent(EditEntradaHuacalesUiEvent.DescripcionChanged(it)) },
-                label = { Text("Descripción") },
-                isError = state.descripcionError != null,
-                modifier = Modifier.fillMaxWidth()
-            )
-            state.descripcionError?.let {
-                Text(
-                    text = it,
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodySmall
-                )
-            }
-
-            // Cantidad
             OutlinedTextField(
                 value = state.cantidad,
                 onValueChange = { onEvent(EditEntradaHuacalesUiEvent.CantidadChanged(it)) },
@@ -96,11 +174,12 @@ fun EditEntradaHuacalesBody(
                 Text(
                     text = it,
                     color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodySmall
+                    fontSize = 12.sp,
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Start
                 )
             }
 
-            // Precio
             OutlinedTextField(
                 value = state.precio,
                 onValueChange = { onEvent(EditEntradaHuacalesUiEvent.PrecioChanged(it)) },
@@ -113,35 +192,57 @@ fun EditEntradaHuacalesBody(
                 Text(
                     text = it,
                     color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodySmall
+                    fontSize = 12.sp,
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Start
                 )
             }
 
-            Spacer(Modifier.height(16.dp))
+            OutlinedTextField(
+                value = importeStr,
+                onValueChange = {},
+                label = { Text("Importe") },
+                readOnly = true,
+                modifier = Modifier.fillMaxWidth()
+            )
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Button(
-                    onClick = { onEvent(EditEntradaHuacalesUiEvent.Save) },
-                    enabled = !state.isSaving,
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-                ) {
-                    Text("Guardar")
-                }
+            Spacer(Modifier.height(8.dp))
 
-                if (state.canBeDeleted) {
-                    OutlinedButton(
-                        onClick = { onEvent(EditEntradaHuacalesUiEvent.Delete) },
-                        enabled = !state.isDeleting,
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
-                    ) {
-                        Text("Eliminar")
+            // Botones: Guardar, Eliminar y Cancelar
+            Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(
+                        onClick = { onEvent(EditEntradaHuacalesUiEvent.Save) },
+                        enabled = !state.isSaving,
+                        modifier = Modifier.weight(1f).height(52.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                    ) { Text("Guardar") }
+
+                    if (state.canBeDeleted) {
+                        OutlinedButton(
+                            onClick = { onEvent(EditEntradaHuacalesUiEvent.Delete) },
+                            modifier = Modifier.weight(1f).height(52.dp),
+                        ) { Text("Eliminar") }
                     }
                 }
+
+                OutlinedButton(
+                    onClick = onCancel,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary)
+                ) { Text("Cancelar") }
+            }
+
+            state.errorMessage?.let {
+                Text(
+                    text = it,
+                    color = MaterialTheme.colorScheme.error,
+                    fontSize = 14.sp,
+                    modifier = Modifier.padding(top = 12.dp),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Start
+                )
             }
         }
     }

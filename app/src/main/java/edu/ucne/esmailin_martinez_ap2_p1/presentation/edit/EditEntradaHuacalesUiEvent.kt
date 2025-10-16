@@ -6,6 +6,9 @@ sealed interface EditEntradaHuacalesUiEvent {
     data class DescripcionChanged(val descripcion: String) : EditEntradaHuacalesUiEvent
     data class CantidadChanged(val cantidad: String) : EditEntradaHuacalesUiEvent
     data class PrecioChanged(val precio: String) : EditEntradaHuacalesUiEvent
+    data class FechaChanged(val value: String) : EditEntradaHuacalesUiEvent
+    data class ImporteChanged(val value: String) : EditEntradaHuacalesUiEvent
+
     object Save : EditEntradaHuacalesUiEvent
     object Delete : EditEntradaHuacalesUiEvent
 }

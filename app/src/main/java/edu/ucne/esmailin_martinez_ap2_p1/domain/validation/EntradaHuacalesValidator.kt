@@ -27,4 +27,24 @@ object EntradaHuacalesValidator {
             ValidationResult(true)
         }
     }
+
+    fun validateFecha(fechaStr: String): ValidationResult {
+        if (fechaStr.isBlank()) return ValidationResult(false, "La fecha es obligatoria")
+        return try {
+            val displayDateFormat = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale("es", "DO"))
+            displayDateFormat.isLenient = false
+            displayDateFormat.parse(fechaStr)
+            ValidationResult(true)
+        } catch (e: Exception) {
+            ValidationResult(false, "Fecha inválida, use el formato yyyy-MM-dd")
+        }
+    }
+    fun validateDescripcion(descripcion: String): ValidationResult {
+        return if (descripcion.isBlank()) {
+            ValidationResult(false, "La descripción es obligatoria")
+        } else {
+            ValidationResult(true)
+        }
+    }
+
 }

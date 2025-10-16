@@ -3,7 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <application
-        android:name=".Esmailin_Martinez_Ap2_P1"
+        android:name="edu.ucne.esmailin_martinez_ap2_p1.Esmailin_Martinez_Ap2_P1"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -13,7 +13,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Esmailin_Martinez_Ap2_P1">
         <activity
-            android:name=".MainActivity"
+            android:name="edu.ucne.esmailin_martinez_ap2_p1.MainActivity"
             android:exported="true"
             android:label="@string/app_name"
             android:theme="@style/Theme.Esmailin_Martinez_Ap2_P1">
