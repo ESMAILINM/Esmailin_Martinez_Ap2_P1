@@ -8,6 +8,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -25,16 +26,74 @@ import edu.ucne.esmailin_martinez_ap2_p1.navigation.Screen
 import java.text.NumberFormat
 import java.util.*
 
+fun formatCurrency(value: Double): String {
+    return NumberFormat.getCurrencyInstance(Locale("es", "DO")).format(value)
+}
+
+@Composable
+fun EntradaHuacalesItem(
+    entrada: EntradaHuacales,
+    onEntradaClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val fechaStr = entrada.fecha
+
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable { onEntradaClick() },
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+        ),
+        shape = MaterialTheme.shapes.medium
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End
+            ) {
+                Text(
+                    text = fechaStr,
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            Spacer(Modifier.height(4.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column {
+                    Text(entrada.nombreCliente, fontWeight = FontWeight.Bold)
+                    Text("${entrada.cantidad} x ${formatCurrency(entrada.precio)}", fontSize = 14.sp)
+                }
+                Text(
+                    "= ${formatCurrency(entrada.cantidad * entrada.precio)}",
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ListEntradaHuacalesScreen(
     navController: NavController,
     viewModel: ListEntradaHuacalesVIewModel = hiltViewModel()
 ) {
+    var showDatePicker by remember { mutableStateOf(false) }
     val state by viewModel.state.collectAsStateWithLifecycle()
     var filtro by remember { mutableStateOf("") }
     var filtroFecha by remember { mutableStateOf("") }
     var showFilterField by remember { mutableStateOf(false) }
+    val datePickerState = rememberDatePickerState()
 
     val filteredEntradas = state.entradas.filter { entrada ->
         val term = filtro.lowercase(Locale.getDefault())
@@ -121,18 +180,50 @@ fun ListEntradaHuacalesScreen(
                             OutlinedTextField(
                                 value = filtroFecha,
                                 onValueChange = { filtroFecha = it },
+                                readOnly = true,
                                 label = { Text("Filtrar por fecha (yyyy-MM-dd)") },
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(top = 8.dp),
+                                    .padding(top = 8.dp)
+                                    .clickable { showDatePicker = true },
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                singleLine = true
+                                singleLine = true,
+                                trailingIcon = {
+                                    IconButton(onClick = { showDatePicker = true }) {
+                                        Icon(
+                                            imageVector = Icons.Default.DateRange,
+                                            contentDescription = "Filtrar por fecha"
+                                        )
+                                    }
+                                }
                             )
+                        }
+                    }
+                    if (showDatePicker) {
+                        DatePickerDialog(
+                            onDismissRequest = { showDatePicker = false },
+                            confirmButton = {
+                                TextButton(onClick = {
+                                    val millis = datePickerState.selectedDateMillis
+                                    if (millis != null) {
+                                        val localDate = java.time.Instant.ofEpochMilli(millis)
+                                            .atZone(java.time.ZoneId.systemDefault())
+                                            .toLocalDate()
+                                        val formatted = localDate.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+                                        filtroFecha = formatted
+                                    }
+                                    showDatePicker = false
+                                }) { Text("OK") }
+                            },
+                            dismissButton = {
+                                TextButton(onClick = { showDatePicker = false }) { Text("Cancelar") }
+                            }
+                        ) {
+                            DatePicker(state = datePickerState)
                         }
                     }
                 }
             }
-
             if (state.isLoading) {
                 Box(Modifier.fillMaxSize().weight(1f), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator()
@@ -182,60 +273,4 @@ fun ListEntradaHuacalesScreen(
             }
         }
     }
-}
-
-@Composable
-private fun EntradaHuacalesItem(
-    entrada: EntradaHuacales,
-    onEntradaClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val fechaStr = entrada.fecha
-
-    Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .clickable { onEntradaClick() },
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
-        ),
-        shape = MaterialTheme.shapes.medium
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End
-            ) {
-                Text(
-                    text = fechaStr,
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-
-            Spacer(Modifier.height(4.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Column {
-                    Text(entrada.nombreCliente, fontWeight = FontWeight.Bold)
-                    Text("${entrada.cantidad} x ${formatCurrency(entrada.precio)}", fontSize = 14.sp)
-                }
-                Text(
-                    "= ${formatCurrency(entrada.cantidad * entrada.precio)}",
-                    fontWeight = FontWeight.Bold
-                )
-            }
-        }
-    }
-}
-
-private fun formatCurrency(value: Double): String {
-    return NumberFormat.getCurrencyInstance(Locale("es", "DO")).format(value)
 }
